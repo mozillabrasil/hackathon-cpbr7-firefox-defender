@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <title>Pega</title>
+  
+  <script type='text/javascript' src='jquery-1.11.0.min.js'></script>  
+  <style type='text/css'>
+    .canvas { position: absolute; left: 0; top: 0; z-index: 0; }
+    body{
+        margin: 0px;
+        background: url('img/fundo.jpg') no-repeat;
+    }
+	.score{
+        margin-right: 10px;
+        color: red;
+        font-family: sans-serif;
+        font-size: 10px;
+        font-weight: bolder;
+        text-align: right;
+        z-index: 1;
+    }
+    .final{
+        color: white;
+        position: fixed; 
+        top: 100px;
+        width: 100%;
+        text-align: center;
+        font-size: 24px;
+        font-family: sans-serif;
+        /*font-weight: 900;*/
+        background-color: black;
+        opacity: 0.7;
+    }
+    .final a{
+        text-decoration: none;
+        color: red;
+        background: transparent;
+    }
+    .logo-ff{
+        position: fixed; 
+        top: 30%;
+        width: 100%;
+        height: 200px;
+        background: url('img/firefox-transp.png') no-repeat;
+        background-position: center;
+        z-index: -3;
+    }
+    .usuarios{
+        position: fixed; 
+        top: 6px;
+        left: 0px;
+        width: 100%;
+        height: 100px;
+        z-index: 0;
+    }
+    .usuarios img{
+        margin-left: 24px;
+        z-index: -1;
+    }
+  </style>
+  
+</head>
+<body>
+	<canvas id="arena" width="320" height="460" class="canvas"></canvas>
+    <div class="usuarios" id="usuarios"><img src="img/usuario.png"><img src="img/usuario.png"><img src="img/usuario.png"></div>
+	<div class="score" id="score">Vidas: <span><strong></strong></span></div>
+    <div class="score" id="usuariosSalvos">Pontos: <span><strong></strong></span></div>
+    <div class="logo-ff" id="logo-ff"></div>
+    
+    <div class="final" id="final"></div>
+    
+	
+<script type='text/javascript'>
+$(function() {
+
+    var arena = document.getElementById("arena");
+
+    var alvosAtivos = [];
+    var vidas = 3;
+    var usuariosSalvos = 0;
+    $('#usuariosSalvos span').text(usuariosSalvos);
+    $("#score span").text(vidas);
+    function criarAlvo() {
+        
+        //criar imagem do alvo 
+        image = new Image();
+        //navegadores
+        var navegadores = Array('ie.png', 'chrome.png', 'safari.png','opera.png');
+        //pega um navegador aleatorio
+        image.src = 'img/' + navegadores[Math.floor(Math.random()*navegadores.length)];
+
+        //coloca o alvo em uma posição aleatória da canvas
+        alvosAtivos.push({
+            image: image,
+            //gera a posição horizontal
+            x: Math.floor(Math.random() * 280),
+            //posição vertical fixa, sempre em baixo da tela;
+            y: 480,
+            index: 0,
+            //velocidade aleatoria
+            speed: Math.floor(Math.random() * 7)
+        });
+    }
+
+    function gerarArena() {
+
+        var context = arena.getContext('2d');
+
+        //limpa a canvas
+        context.clearRect(0, 0, 320, 480);
+
+        //pega os navegadores fora da arena
+        var escapedarena = [];
+
+        //verifica os alvos se eles estão fora da arena (canvas)
+        $.each(alvosAtivos, function(index, value) {
+            this.index = index;
+            this.y -= this.speed;
+            //se estiver dentro da arena
+            if (this.y > -64) {
+                //console.info(this.y);
+                context.drawImage(this.image, this.x, this.y);
+            } else {
+                //se alvo estiver fora calcula como atingido e tira ele da tela
+                escapedarena.push(this);
+                vidas--;
+                $("#score span").text(vidas);
+            }
+        });
+
+        // remove do array os alvos 
+        $.each(escapedarena, function(index, value) {
+            alvosAtivos.splice(this.index, 1);
+        });
+
+        // verifica se deu game over
+        if(vidas>=1){
+            fpsBrowser()(gerarArena, document.getElementById("arena"));
+        }else{
+            $('#final').html('Você fez: <br />'+usuariosSalvos+' pontos!<br /><br /><a href="ball.html">Reinciar Jogo!');
+        }
+    }
+
+    //pega o fps do navegador
+    function fpsBrowser() {
+        return window.mozRequestAnimationFrame;
+    };
+
+    function verificaColisao(x, y) {
+
+        //variaveis de controle para verificacao do alvo
+        var colisaoAlvo = false;
+        var colisaoId = 0;
+
+        //verificar colisao
+        $.each(alvosAtivos, function(index, value) {
+            //verifica a area do alvo
+            if (x > this.x && x < this.x + 50 && y > this.y + 20 && y < this.y + 85) {
+                colisaoAlvo = true;
+                colisaoId = this.index;
+                alvosAtivos.splice(colisaoId, 1);
+                usuariosSalvos++;
+                $('#usuariosSalvos span').text(usuariosSalvos);
+            }
+        });
+    }
+
+    //quando clicar verifica colisao
+    $(document).click(function(e) {
+        verificaColisao(e.pageX, e.pageY);
+    });
+
+    //inicia o jogo
+    gerarArena();
+
+    // intervalo para gerar os alvos, entre 700ms a 1200ms 
+    setInterval(criarAlvo, Math.floor(Math.random() * (1200 - 700 + 1)) + 700);
+
+}); 
+
+</script>
+</body>
+</html>
